@@ -1,17 +1,24 @@
 -- nsdp protocol
 -- declare our protocol
 nsdp_proto = Proto("nsdp","NSDP")
--- create a function to dissect it
+-- protocol fields
+local nsdp_proto_field_version = ProtoField.uint16("nsdp.version", "Version")
+local nsdp_proto_field_operation = ProtoField.uint16("nsdp.operation", "Operation")
+nsdp_proto.fields = {nsdp_proto_field_version, nsdp_proto_field_operation}
+-- function to dissect it
 function nsdp_proto.dissector(buffer,pinfo,tree)
-    pinfo.cols.protocol = "NSDP"
-    local subtree = tree:add(nsdp_proto,buffer(),"Netgrear NSDP Data")
-    subtree:add(buffer(0,2),"Version: " .. buffer(0,2):uint())
-    subtree:add(buffer(2,2),"Operation: " .. buffer(2,2):uint())
-    subtree = subtree:add(buffer(4,2),"Operation")
-    subtree:add(buffer(4,1),"The 3rd byte: " .. buffer(4,1):uint())
-    subtree:add(buffer(4,1),"The 4th byte: " .. buffer(4,1):uint())
+    local version = buffer(0,2):uint()
+    local operation = buffer(2,2):uint()
+    pinfo.cols.protocol = "NSDPv" .. version
+    local subtree = tree:add(nsdp_proto,buffer(),"Netgear NSDPv" .. version .. " Data")
+    subtree:add(nsdp_proto_field_version,buffer(0,2),version)
+    subtree:add(nsdp_proto_field_operation,buffer(2,2),operation)
+    subtree = subtree:add(buffer(4,6),"Version 2 fields")
+    subtree:add(buffer(4,6),"Destination MAC: " .. tostring(buffer(4,6):ether()))
 end
 -- load the udp.port table
 udp_table = DissectorTable.get("udp.port")
 -- register our protocol to handle udp port 64513,64512
-udp_table:add(64513,nsdp_proto)
+for i,port in ipairs{64513,64515,63321,63322,63323,63324} do
+    udp_table:add(port,nsdp_proto)
+end
