@@ -6,7 +6,12 @@ local nsdp_proto_field_version = ProtoField.uint16("nsdp.version", "Version")
 local nsdp_proto_field_operation = ProtoField.uint16("nsdp.operation", "Operation")
 local nsdp_proto_field_hwaddr = ProtoField.ether("nsdp.hwaddr", "Device eth-addr", "Device ethernet adress repeated in packet")
 local nsdp_proto_field_header_dst_hwaddr = ProtoField.ether("nsdp.dsthwaddr", "Header Destination eth-addr", "Header destination ethernet adress")
-nsdp_proto.fields = {nsdp_proto_field_version, nsdp_proto_field_operation, nsdp_proto_field_hwaddr, nsdp_proto_field_header_dst_hwaddr}
+nsdp_proto.fields = {
+ nsdp_proto_field_version,
+ nsdp_proto_field_operation,
+ nsdp_proto_field_hwaddr,
+ nsdp_proto_field_header_dst_hwaddr
+}
 
 -- field we need to read
 local srcport = Field.new("udp.srcport")
@@ -55,7 +60,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
         if version == 2 then
             subtree = subtree:add(buffer(4,6),"Version 2 fields")
             subtree:add(nsdp_proto_field_hwaddr,buffer(4,6))
-            subtree:add(nsdp_proto_field_header_dst_hwaddr,buffer(0x14,6))
+            subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
         end
     end
 end
