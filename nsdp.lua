@@ -68,6 +68,10 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 subtree_netgear_ip:add("Does not match " .. "12.7.210.242")
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
+            if buffer:len() > 0x28 then
+                local tlv4buf = buffer:range(0x28)
+                tvbtree = subtree:add(tlv4buf, "TLV4")
+            end
         end
     end
 end
