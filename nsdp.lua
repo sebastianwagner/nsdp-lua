@@ -22,6 +22,9 @@ local dstport = Field.new("udp.dstport")
 -- protocol static offsets
 local versionOffset = 0
 local operationOffset = 2
+-- hardcoded / magic fields
+local netgear_ip = "12.7.210.242"
+
 -- function to dissect it
 function nsdp_proto.dissector(buffer,pinfo,tree)
     function parseTlvField(tlv4buf,pinfo,tlvFieldTree, tlvOffset)
@@ -33,7 +36,8 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             if tlvFieldLen > 0 then
                 tlvFieldTree:add(tlvFieldBuf:range(2 + 2, tlvFieldLen), "Field Value: " .. tostring(tlvFieldBuf:range(2 + 2)))
             else
-                tlvFieldTree:add(tlvFieldBuf, "[Empty Field Value]")
+                tlvFieldValueEmptyGeneratedTree = tlvFieldTree:add(tlvFieldBuf, "Empty Field Value")
+                tlvFieldValueEmptyGeneratedTree:set_generated()
             end
         end
     end
@@ -76,9 +80,9 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             subtree = subtree:add(buffer(4,6),"Version 2 fields")
             subtree:add(nsdp_proto_field_hwaddr,buffer(4,6))
             subtree_netgear_ip = subtree:add(nsdp_proto_field_header_netgear_ip, buffer(0x10,4))
-            -- hardcoded
-            if not tostring(buffer(0x10,4):ipv4()) == "12.7.210.242" then
-                subtree_netgear_ip:add("Does not match " .. "12.7.210.242")
+            if not tostring(buffer(0x10,4):ipv4()) == netgear_ip then
+                subtree_netgear_ip_comp = subtree_netgear_ip:add("Does not match " .. netgear_ip)
+                subtree_netgear_ip_comp:set_generated()
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
             if buffer:len() > 0x28 then
