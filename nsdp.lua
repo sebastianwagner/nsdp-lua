@@ -89,7 +89,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             tlvtree = subtree:add(tlv4buf, "TLV4")
             if buffer:len() > 0x28 then
                 local tlvLen = tlv4buf:len()
-                tlvOffset = 0
+                local tlvOffset = 0
                 while tlvOffset + 2 + 2 <= tlvLen do
                     tlvFieldType = tlv4buf:range(tlvOffset, 2):uint()
                     tlvFieldLen = tlv4buf:range(tlvOffset + 2, 2):uint() - 2 - 2
@@ -98,15 +98,15 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                             parseTlvField(tlv4buf, pinfo, tlvFieldTree, tlvOffset)
                         end
                         -- increment
-                        tlvOffset = tlvOffset + 2 + 2 + tlvFieldLen
+                        tlvOffset = tlvOffset + tlvFieldLen
                     else
                         tlvFieldBuf = tlv4buf:range(tlvOffset, 2 + 2)
                         tlvFieldTree = tlvtree:add(tlvFieldBuf, "TLV4 Field Type: " .. tlvFieldType .. " Len: " .. tlvFieldLen)
                         tlvFieldTree:add(tlvFieldBuf:range(0, 2), "Field Type: " .. tlvFieldBuf:range(0, 2):uint())
                         tlvFieldTree:add(tlvFieldBuf:range(2, 2), "Field Len(faulty): " .. tlvFieldBuf:range(2, 2):uint())
-                        -- increment
-                        tlvOffset = tlvOffset + 2 + 2
                     end
+                    -- increment
+                    tlvOffset = tlvOffset + 2 + 2
                 end
             else
                 tlvtree:append_text(" " .. "Empty Body")
