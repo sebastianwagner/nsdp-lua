@@ -70,7 +70,35 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
             if buffer:len() > 0x28 then
                 local tlv4buf = buffer:range(0x28)
-                tvbtree = subtree:add(tlv4buf, "TLV4")
+                local tlvLen = tlv4buf:len()
+                tlvtree = subtree:add(tlv4buf, "TLV4")
+                tlvOffset = 0
+                while tlvOffset + 2 + 2 <= tlvLen do
+                    tlvFieldType = tlv4buf:range(tlvOffset, 2):uint()
+                    tlvFieldLen = tlv4buf:range(tlvOffset + 2, 2):uint() - 2 - 2
+                    if tlvFieldLen >= 0 then
+                        if tlv4buf:len() >= tlvOffset + 2 + 2 + tlvFieldLen then
+                            tlvFieldBuf = tlv4buf:range(tlvOffset, 2 + 2 + tlvFieldLen)
+                            tlvFieldTree = tlvtree:add(tlvFieldBuf, "TLV4 Field Type: " .. tlvFieldType .. " Len: " .. tlvFieldLen)
+                            tlvFieldTree:add(tlvFieldBuf:range(0, 2), "Field Type: " .. tlvFieldBuf:range(0, 2):uint())
+                            tlvFieldTree:add(tlvFieldBuf:range(2, 2), "Field Len: " .. tlvFieldBuf:range(2, 2):uint())
+                            if tlvFieldLen > 0 then
+                                tlvFieldTree:add(tlvFieldBuf:range(2 + 2, tlvFieldLen), "Field Value: " .. tostring(tlvFieldBuf:range(2 + 2)))
+                            else
+                                tlvFieldTree:add(tlvFieldBuf, "[Empty Field Value]")
+                            end
+                        end
+                        -- increment
+                        tlvOffset = tlvOffset + 2 + 2 + tlvFieldLen
+                    else
+                        tlvFieldBuf = tlv4buf:range(tlvOffset, 2 + 2)
+                        tlvFieldTree = tlvtree:add(tlvFieldBuf, "TLV4 Field Type: " .. tlvFieldType .. " Len: " .. tlvFieldLen)
+                        tlvFieldTree:add(tlvFieldBuf:range(0, 2), "Field Type: " .. tlvFieldBuf:range(0, 2):uint())
+                        tlvFieldTree:add(tlvFieldBuf:range(2, 2), "Field Len(faulty): " .. tlvFieldBuf:range(2, 2):uint())
+                        -- increment
+                        tlvOffset = tlvOffset + 2 + 2
+                    end
+                end
             end
         end
     end
