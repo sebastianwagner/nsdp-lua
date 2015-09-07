@@ -62,7 +62,11 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
         if version == 2 then
             subtree = subtree:add(buffer(4,6),"Version 2 fields")
             subtree:add(nsdp_proto_field_hwaddr,buffer(4,6))
-            subtree:add(nsdp_proto_field_header_netgear_ip, buffer(0x10,4))
+            subtree_netgear_ip = subtree:add(nsdp_proto_field_header_netgear_ip, buffer(0x10,4))
+            -- hardcoded
+            if not tostring(buffer(0x10,4):ipv4()) == "12.7.210.242" then
+                subtree_netgear_ip:add("Does not match " .. "12.7.210.242")
+            end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
         end
     end
