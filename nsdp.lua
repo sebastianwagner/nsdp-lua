@@ -85,10 +85,10 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 subtree_netgear_ip_comp:set_generated()
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
+            local tlv4buf = buffer:range(0x28)
+            tlvtree = subtree:add(tlv4buf, "TLV4")
             if buffer:len() > 0x28 then
-                local tlv4buf = buffer:range(0x28)
                 local tlvLen = tlv4buf:len()
-                tlvtree = subtree:add(tlv4buf, "TLV4")
                 tlvOffset = 0
                 while tlvOffset + 2 + 2 <= tlvLen do
                     tlvFieldType = tlv4buf:range(tlvOffset, 2):uint()
@@ -108,6 +108,9 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                         tlvOffset = tlvOffset + 2 + 2
                     end
                 end
+            else
+                tlvtree:append_text(" " .. "Empty Body")
+                tlvtree:set_generated()
             end
         end
     end
