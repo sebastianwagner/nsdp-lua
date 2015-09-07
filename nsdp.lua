@@ -24,6 +24,19 @@ local versionOffset = 0
 local operationOffset = 2
 -- function to dissect it
 function nsdp_proto.dissector(buffer,pinfo,tree)
+    function parseTlvField(tlv4buf,pinfo,tlvFieldTree, tlvOffset)
+        if tlv4buf:len() >= tlvOffset + 2 + 2 + tlvFieldLen then
+            tlvFieldBuf = tlv4buf:range(tlvOffset, 2 + 2 + tlvFieldLen)
+            tlvFieldTree = tlvtree:add(tlvFieldBuf, "TLV4 Field Type: " .. tlvFieldType .. " Len: " .. tlvFieldLen)
+            tlvFieldTree:add(tlvFieldBuf:range(0, 2), "Field Type: " .. tlvFieldBuf:range(0, 2):uint())
+            tlvFieldTree:add(tlvFieldBuf:range(2, 2), "Field Len: " .. tlvFieldBuf:range(2, 2):uint())
+            if tlvFieldLen > 0 then
+                tlvFieldTree:add(tlvFieldBuf:range(2 + 2, tlvFieldLen), "Field Value: " .. tostring(tlvFieldBuf:range(2 + 2)))
+            else
+                tlvFieldTree:add(tlvFieldBuf, "[Empty Field Value]")
+            end
+        end
+    end
     -- udp environment
     local srcport = pinfo.src_port
     local dstport = pinfo.dst_port
@@ -78,15 +91,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                     tlvFieldLen = tlv4buf:range(tlvOffset + 2, 2):uint() - 2 - 2
                     if tlvFieldLen >= 0 then
                         if tlv4buf:len() >= tlvOffset + 2 + 2 + tlvFieldLen then
-                            tlvFieldBuf = tlv4buf:range(tlvOffset, 2 + 2 + tlvFieldLen)
-                            tlvFieldTree = tlvtree:add(tlvFieldBuf, "TLV4 Field Type: " .. tlvFieldType .. " Len: " .. tlvFieldLen)
-                            tlvFieldTree:add(tlvFieldBuf:range(0, 2), "Field Type: " .. tlvFieldBuf:range(0, 2):uint())
-                            tlvFieldTree:add(tlvFieldBuf:range(2, 2), "Field Len: " .. tlvFieldBuf:range(2, 2):uint())
-                            if tlvFieldLen > 0 then
-                                tlvFieldTree:add(tlvFieldBuf:range(2 + 2, tlvFieldLen), "Field Value: " .. tostring(tlvFieldBuf:range(2 + 2)))
-                            else
-                                tlvFieldTree:add(tlvFieldBuf, "[Empty Field Value]")
-                            end
+                            parseTlvField(tlv4buf, pinfo, tlvFieldTree, tlvOffset)
                         end
                         -- increment
                         tlvOffset = tlvOffset + 2 + 2 + tlvFieldLen
