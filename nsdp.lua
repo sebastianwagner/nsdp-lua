@@ -113,9 +113,49 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
       local field2 = field2range:uint()
       local field3 = field3range:uint()
       -- tree
-      local field1tree = subtree:add(field1range, "Field1: " .. field1)
-      local field2tree = subtree:add(field2range, "Field2: " .. field2)
-      local field3tree = subtree:add(field3range, "Field3: " .. field3)
+      local header = "Header: "
+      local invalid = 0
+      if field1 == 0 then
+        if field2 == 1 then
+          header = header .. "Discover Query"
+        elseif field2 == 3 then
+          header = header .. "Pwchange or Networksetting Query"
+        else
+          header = header .. "Unknown Query"
+          invalid = 1
+        end
+      elseif field1 == 2 then
+        if field2 == 0x02 then
+          header = header .. "Discover Response"
+        elseif field2 == 0x04 then
+          header = header .. "Pwchange or Networksetting Response"
+        elseif field2 == 0x0b then
+          header = header .. "Firmware Response"
+        else
+          header = header .. "Unknown Response"
+          invalid = 1
+        end
+      elseif field1 == 3 then
+        if field2 == 0x0a then
+          header = header .. "Firmware Query"
+        else
+          header = header .. "Unknown Firmware Query"
+          invalid = 1
+        end
+      else
+       invalid = 1
+      end
+      if field3 > 0 then
+        invalid = 1
+      end
+      local headerTree = subtree:add(header)
+      if invalid > 0 then
+        invalidHint = headerTree:add(field1range, "Invalid")
+        invalidHint:set_generated()
+      end
+      local field1tree = headerTree:add(field1range, "Field1: " .. field1)
+      local field2tree = headerTree:add(field2range, "Field2: " .. field2)
+      local field3tree = headerTree:add(field3range, "Field3: " .. field3)
     end
     -- udp environment
     local srcport = pinfo.src_port
