@@ -42,6 +42,11 @@ local nsdp_proto_v2_tlv_types = {
  {name = "Version"},
  {name = "ever 0001"},
 }
+local nsdp_proto_v2_operations = {
+ {},
+ {{name = "Firmware"},{name = "Networksetting"}}
+}
+nsdp_proto_v2_operations[0] = {{name = "Discover"},{name = "Pwchange"}}
 
 -- function to dissect it
 function nsdp_proto.dissector(buffer,pinfo,tree)
@@ -75,6 +80,26 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
       if tostring(hwaddrRange:ether()) == nsdp_proto_v2_dstHwaddrBroadcast then
         local subtreeBroadcastHint = subtree_hwaddr:add(hwaddrRange, "Broadcast")
         subtreeBroadcastHint:set_generated()
+      end
+    end
+    function parseV2Operation(headv2buf, pinfo, subtree)
+      local headv2_operationRange = headv2buf:range(0x1a, 2)
+      local operation = headv2_operationRange:uint()
+      local headv2_operationTreeItem = subtree:add(nsdp_proto_field_operation, headv2_operationRange)
+      if nsdp_proto_v2_operations[operation] then
+        local operations = nsdp_proto_v2_operations[operation]
+        local len = #(operations)
+        if len > 0 then
+          for i = 1,len,1 do
+            if operations[i].name then
+              operationCandidateItem = headv2_operationTreeItem:add("Candidate: " .. operations[i].name)
+              operationCandidateItem:set_generated()
+            end
+          end
+        end
+      else
+        local operationHintItem = headv2_operationTreeItem:add("Unknown Operation Code")
+        operationHintItem:set_generated()
       end
     end
     -- udp environment
@@ -121,8 +146,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 subtree_netgear_ip:add_expert_info(PI_CHECKSUM, PI_NOTE, "Does not match " .. netgear_ip)
             end
             parseV2DstHwaddr(buffer, pinfo, subtree)
-            local headv2_operationRange = headv2buf:range(0x1a, 2)
-            local headv2_operationTreeItem = subtree:add(nsdp_proto_field_operation, headv2_operationRange)
+            parseV2Operation(headv2buf, pinfo, subtree)
             local headv2_zeropadbuf = headv2buf:range(nsdp_proto_v2_headerlen - 0x0c)
             local headv2_zeropadtree = subtree:add(headv2_zeropadbuf, "Zero padding")
             headv2_zeropadtree:set_generated()
