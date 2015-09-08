@@ -88,6 +88,8 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 subtree_netgear_ip:add_expert_info(PI_CHECKSUM, PI_NOTE, "Does not match " .. netgear_ip)
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
+            local headv2_operationRange = headv2buf:range(0x1a, 2)
+            local headv2_operationTreeItem = subtree:add(nsdp_proto_field_operation, headv2_operationRange)
             local headv2_zeropadbuf = headv2buf:range(nsdp_proto_v2_headerlen - 0x0c)
             local headv2_zeropadtree = subtree:add(headv2_zeropadbuf, "Zero padding")
             headv2_zeropadtree:set_generated()
