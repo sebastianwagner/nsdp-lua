@@ -24,6 +24,7 @@ local versionOffset = 0
 local operationOffset = 2
 -- hardcoded / magic fields
 local netgear_ip = "12.7.210.242"
+local nsdp_proto_v2_headerlen = 0x52 - 0x2a -- current offset in datagram
 
 -- function to dissect it
 function nsdp_proto.dissector(buffer,pinfo,tree)
@@ -85,15 +86,15 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 subtree_netgear_ip_comp:set_generated()
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
-            local tlv4buf = buffer:range(0x28)
+            local tlv4buf = buffer:range(nsdp_proto_v2_headerlen)
             tlvtree = subtree:add(tlv4buf, "TLV4")
-            if buffer:len() > 0x28 then
+            if buffer:len() > nsdp_proto_v2_headerlen then
                 local tlvLen = tlv4buf:len()
                 local tlvOffset = 0
                 while tlvOffset + 2 + 2 <= tlvLen do
                     tlvFieldType = tlv4buf:range(tlvOffset, 2):uint()
                     tlvFieldLen = tlv4buf:range(tlvOffset + 2, 2):uint() - 2 - 2
-                    if tlvFieldLen >= 0 then
+                    if tlvFieldLen >= 0 then -- could be up to minus 4
                         if tlv4buf:len() >= tlvOffset + 2 + 2 + tlvFieldLen then
                             parseTlvField(tlv4buf, pinfo, tlvFieldTree, tlvOffset)
                         end
