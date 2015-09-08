@@ -26,6 +26,20 @@ local versionOffset = 0
 local operationOffset = 2
 -- hardcoded / magic fields
 local netgear_ip = "12.7.210.242"
+local nsdp_proto_v1_srcport = 63321 -- @link https://github.com/kvishnivetsky/NetgearProSafeUtils/blob/master/nsdp-config#L49
+local nsdp_proto_v1_dstport = 63322 -- @link https://github.com/kvishnivetsky/NetgearProSafeUtils/blob/master/nsdp-config#L265
+local nsdp_proto_v1FS726TP_srcport = 63323 -- @link https://www.toolswatch.org/2014/03/nsdtool-netgear-switch-discovery-tool-released/#more-43234
+local nsdp_proto_v1FS726TP_dstport = 63324 -- @see nsdp_proto_v1FS726TP_srcport
+local nsdp_proto_v2_srcport = 64513
+local nsdp_proto_v2_dstport = 64515
+local nsdp_proto_dgramports = {
+nsdp_proto_v2_srcport,
+nsdp_proto_v2_dstport,
+nsdp_proto_v1_srcport,
+nsdp_proto_v1_dstport,
+nsdp_proto_v1FS726TP_srcport,
+nsdp_proto_v1FS726TP_dstport
+}
 local nsdp_proto_v2_dstHwaddrBroadcast = "00:00:00_00:00:00"
 local nsdp_proto_v2_headerlen = 0x52 - 0x2a -- current offset in datagram
 local nsdp_proto_v2_tlv_types = {
@@ -239,6 +253,6 @@ end
 -- load the udp.port table
 udp_table = DissectorTable.get("udp.port")
 -- register our protocol to handle udp port 64513,64512
-for i,port in ipairs{64513,64515,63321,63322,63323,63324} do
+for i,port in ipairs(nsdp_proto_dgramports) do
     udp_table:add(port,nsdp_proto)
 end
