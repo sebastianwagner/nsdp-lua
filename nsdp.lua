@@ -27,13 +27,36 @@ local operationOffset = 2
 -- hardcoded / magic fields
 local netgear_ip = "12.7.210.242"
 local nsdp_proto_v2_headerlen = 0x52 - 0x2a -- current offset in datagram
+local nsdp_proto_v2_tlv_types = {
+ {name = "Device type"},
+ {name = "Hostname"},
+ {name = "Location(custom value)"},
+ {name = "Device IP"},
+ {name = "Subnetmask"},
+ {name = "Gateway"},
+ {name = ""},
+ {name = "Password(new)"},
+ {name = "Password(auth)"},
+ {name = "DHCP on/off"},
+ {name = "Version"},
+ {name = "ever 0001"},
+}
 
 -- function to dissect it
 function nsdp_proto.dissector(buffer,pinfo,tree)
-    function parseTlvField(tlv4buf,pinfo,tlvFieldTree, tlvOffset)
+    function parseTlvField(tlv4buf, pinfo, tlvFieldTree, tlvOffset)
+      if tlv4buf:len() > tlvOffset + 2 + 2 then
+        local tlvFieldType = tlv4buf:range(tlvOffset, 2):uint()
+        if nsdp_proto_v2_tlv_types[tlvFieldType] then
+          tlvFieldTypeName = nsdp_proto_v2_tlv_types[tlvFieldType].name
+        end
+        local tlvFieldLen = tlv4buf:range(tlvOffset + 2, 2):uint() - 2 - 2
         if tlv4buf:len() >= tlvOffset + 2 + 2 + tlvFieldLen then
             tlvFieldBuf = tlv4buf:range(tlvOffset, 2 + 2 + tlvFieldLen)
             tlvFieldTree = tlvtree:add(tlvFieldBuf, "TLV4 Field Type: " .. tlvFieldType .. " Len: " .. tlvFieldLen)
+            if tlvFieldTypeName then
+              tlvFieldTree:set_text(tlvFieldTypeName .. " " .. "(Len: " .. tlvFieldLen .. ")")
+            end
             tlvFieldTree:add(tlvFieldBuf:range(0, 2), "Field Type: " .. tlvFieldBuf:range(0, 2):uint())
             tlvFieldTree:add(tlvFieldBuf:range(2, 2), "Field Len: " .. tlvFieldBuf:range(2, 2):uint())
             if tlvFieldLen > 0 then
@@ -43,6 +66,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 tlvFieldValueEmptyGeneratedTree:set_generated()
             end
         end
+      end
     end
     -- udp environment
     local srcport = pinfo.src_port
