@@ -78,6 +78,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
         subtree:add(nsdp_proto_field_version,versionBuffer)
         subtree:add(nsdp_proto_field_operation,operationBuffer)
         if version == 2 then
+            local headv2buf = buffer:range(0, nsdp_proto_v2_headerlen)
             subtree = subtree:add(buffer(4,6),"Version 2 fields")
             subtree:add(nsdp_proto_field_hwaddr,buffer(4,6))
             subtree_netgear_ip = subtree:add(nsdp_proto_field_header_netgear_ip, buffer(0x10,4))
@@ -85,6 +86,9 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 subtree_netgear_ip:add_expert_info(PI_CHECKSUM, PI_NOTE, "Does not match " .. netgear_ip)
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
+            local headv2_zeropadbuf = headv2buf:range(nsdp_proto_v2_headerlen - 0x0c)
+            local headv2_zeropadtree = subtree:add(headv2_zeropadbuf, "Zero padding")
+            headv2_zeropadtree:set_generated()
             local tlv4buf = buffer:range(nsdp_proto_v2_headerlen)
             tlvtree = subtree:add(tlv4buf, "TLV4")
             if buffer:len() > nsdp_proto_v2_headerlen then
