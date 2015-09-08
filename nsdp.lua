@@ -82,8 +82,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             subtree:add(nsdp_proto_field_hwaddr,buffer(4,6))
             subtree_netgear_ip = subtree:add(nsdp_proto_field_header_netgear_ip, buffer(0x10,4))
             if not tostring(buffer(0x10,4):ipv4()) == netgear_ip then
-                subtree_netgear_ip_comp = subtree_netgear_ip:add("Does not match " .. netgear_ip)
-                subtree_netgear_ip_comp:set_generated()
+                subtree_netgear_ip:add_expert_info(PI_CHECKSUM, PI_NOTE, "Does not match " .. netgear_ip)
             end
             subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
             local tlv4buf = buffer:range(nsdp_proto_v2_headerlen)
