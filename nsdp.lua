@@ -102,6 +102,21 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
         operationHintItem:set_generated()
       end
     end
+    -- three strange header fields
+    function parseV2Headers(headv2buf, pinfo, subtree)
+      -- buffers
+      local field1range = headv2buf:range(0x0a + 2 * 0, 2)
+      local field2range = headv2buf:range(0x0a + 2 * 1, 2)
+      local field3range = headv2buf:range(0x0a + 2 * 2, 2)
+      -- values
+      local field1 = field1range:uint()
+      local field2 = field2range:uint()
+      local field3 = field3range:uint()
+      -- tree
+      local field1tree = subtree:add(field1range, "Field1: " .. field1)
+      local field2tree = subtree:add(field2range, "Field2: " .. field2)
+      local field3tree = subtree:add(field3range, "Field3: " .. field3)
+    end
     -- udp environment
     local srcport = pinfo.src_port
     local dstport = pinfo.dst_port
@@ -141,6 +156,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             local headv2buf = buffer:range(0, nsdp_proto_v2_headerlen)
             subtree = subtree:add(buffer(4,6),"Version 2 fields")
             subtree:add(nsdp_proto_field_hwaddr,buffer(4,6))
+            parseV2Headers(headv2buf, pinfo, subtree)
             subtree_netgear_ip = subtree:add(nsdp_proto_field_header_netgear_ip, buffer(0x10,4))
             if not tostring(buffer(0x10,4):ipv4()) == netgear_ip then
                 subtree_netgear_ip:add_expert_info(PI_CHECKSUM, PI_NOTE, "Does not match " .. netgear_ip)
