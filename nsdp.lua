@@ -3,12 +3,14 @@
 nsdp_proto = Proto("nsdp","NSDP")
 -- protocol fields
 local nsdp_proto_field_version = ProtoField.uint16("nsdp.version", "Version")
+local nsdp_proto_field_direction = ProtoField.uint16("nsdp.direction", "Direction")
 local nsdp_proto_field_operation = ProtoField.uint16("nsdp.operation", "Operation")
 local nsdp_proto_field_header_netgear_ip = ProtoField.ipv4("nsdp.netgearip", "netgear.com IP", "(old)netgear.com IP adress")
 local nsdp_proto_field_hwaddr = ProtoField.ether("nsdp.hwaddr", "Device eth-addr", "Device ethernet adress repeated in packet")
 local nsdp_proto_field_header_dst_hwaddr = ProtoField.ether("nsdp.dsthwaddr", "Header Destination eth-addr", "Header destination ethernet adress")
 nsdp_proto.fields = {
  nsdp_proto_field_version,
+ nsdp_proto_field_direction,
  nsdp_proto_field_operation,
  nsdp_proto_field_hwaddr,
  nsdp_proto_field_header_netgear_ip,
@@ -76,7 +78,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
         pinfo.cols.protocol = "NSDPv" .. version
         local subtree = tree:add(nsdp_proto,buffer(),"Netgear NSDPv" .. version .. " Data")
         subtree:add(nsdp_proto_field_version,versionBuffer)
-        subtree:add(nsdp_proto_field_operation,operationBuffer)
+        subtree:add(nsdp_proto_field_direction, operationBuffer)
         if version == 2 then
             local headv2buf = buffer:range(0, nsdp_proto_v2_headerlen)
             subtree = subtree:add(buffer(4,6),"Version 2 fields")
