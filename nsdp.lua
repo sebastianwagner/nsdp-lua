@@ -26,6 +26,7 @@ local versionOffset = 0
 local operationOffset = 2
 -- hardcoded / magic fields
 local netgear_ip = "12.7.210.242"
+local nsdp_proto_v2_dstHwaddrBroadcast = "00:00:00_00:00:00"
 local nsdp_proto_v2_headerlen = 0x52 - 0x2a -- current offset in datagram
 local nsdp_proto_v2_tlv_types = {
  {name = "Device type"},
@@ -66,6 +67,14 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
                 tlvFieldValueEmptyGeneratedTree:set_generated()
             end
         end
+      end
+    end
+    function parseV2DstHwaddr(buffer, pinfo, subtree)
+      local hwaddrRange = buffer:range(0x14,6)
+      local subtree_hwaddr = subtree:add(nsdp_proto_field_header_dst_hwaddr, hwaddrRange)
+      if tostring(hwaddrRange:ether()) == nsdp_proto_v2_dstHwaddrBroadcast then
+        local subtreeBroadcastHint = subtree_hwaddr:add(hwaddrRange, "Broadcast")
+        subtreeBroadcastHint:set_generated()
       end
     end
     -- udp environment
@@ -111,7 +120,7 @@ function nsdp_proto.dissector(buffer,pinfo,tree)
             if not tostring(buffer(0x10,4):ipv4()) == netgear_ip then
                 subtree_netgear_ip:add_expert_info(PI_CHECKSUM, PI_NOTE, "Does not match " .. netgear_ip)
             end
-            subtree:add(nsdp_proto_field_header_dst_hwaddr, buffer(0x14,6))
+            parseV2DstHwaddr(buffer, pinfo, subtree)
             local headv2_operationRange = headv2buf:range(0x1a, 2)
             local headv2_operationTreeItem = subtree:add(nsdp_proto_field_operation, headv2_operationRange)
             local headv2_zeropadbuf = headv2buf:range(nsdp_proto_v2_headerlen - 0x0c)
